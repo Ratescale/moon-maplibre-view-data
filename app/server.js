@@ -1,18 +1,24 @@
-const { PMTilesServer } = require('@protomaps/pmtiles');
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const { PMTiles } = require('/pmtiles/js/dist/index'); // コンパイル後のエントリーポイントを指定
 
 const app = express();
 const port = 8080;
 
-// PMTilesファイルが保存されるディレクトリ
-const pmtilesPath = '/app/data/';
+// PMTilesファイルのディレクトリ
+const pmtilesPath = '/app/data';
 
 app.get('/:file/:z/:x/:y', async (req, res) => {
     const { file, z, x, y } = req.params;
     try {
-        const filePath = `${pmtilesPath}${file}.pmtiles`;
-        const server = new PMTilesServer(filePath);
-        const tile = await server.getTile(z, x, y);
+        const filePath = path.join(pmtilesPath, `${file}.pmtiles`);
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).send('PMTiles file not found');
+        }
+
+        const pmtiles = new PMTiles(filePath);
+        const tile = await pmtiles.getTile(z, x, y);
 
         if (tile) {
             res.setHeader('Content-Type', 'image/png');
